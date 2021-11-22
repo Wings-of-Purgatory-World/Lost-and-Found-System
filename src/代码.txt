@@ -1,0 +1,124 @@
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Server {
+    public static void main(String[] args) throws IOException {
+        System.out.println("服务器已启动，等待客户端请求......");
+        //创建线程池，大小为10
+        ExecutorService pool= Executors.newFixedThreadPool(10);
+        //服务器起一个端口
+        ServerSocket serverSocket=new ServerSocket(8080);
+
+        while (true){
+            Socket socket = serverSocket.accept();//接收客户端请求，返回一个socket供通信
+            pool.execute(new ServerTask(socket));//把任务提交至线程池
+        }
+    }
+}
+
+import java.io.*;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+
+public class ServerTask implements Runnable {
+    private final Socket socket;//本线程创建一个socket
+
+    public ServerTask(Socket socket) {
+        this.socket = socket;
+    }//将本线程的socket设为Client连接过来的socket
+
+    @Override
+    public void run() {
+        try {
+            //获取输入字节流(即客户端发送来的字节流)
+            InputStream is = socket.getInputStream();
+            //字节流转换为字符流
+            InputStreamReader isReader = new InputStreamReader(is, StandardCharsets.UTF_8);
+            //字符流转换为缓冲字符流
+            BufferedReader reader = new BufferedReader(isReader);
+
+            //获取输出字符流(即回复给客户端的消息)
+            OutputStream os = socket.getOutputStream();
+            PrintStream out = new PrintStream(os, true, "UTF-8");
+
+            InetAddress clientIP = socket.getInetAddress();//获取客户端IP
+            int clientPort = socket.getPort();//获取客户端端口
+
+            out.println("连接成功");
+            String msg = reader.readLine();//接收请求
+            System.out.println("与客户端" + clientIP + ":" + clientPort + "连接并收到一个请求：" + msg);//打印请求
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+import java.io.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+
+public class Transfer {
+
+    //传送客户端信息，返回ArrayList数组,mark为true
+    public static ArrayList<String> transfer(String message,boolean mark) throws IOException {
+
+        Socket clientSocket=new Socket();//创建一个套接字用于TCP连接
+        InetAddress serverIP=InetAddress.getByName("127.0.0.1");//获取服务器的IP地址
+
+        //连接服务器
+        int serverPort=8080;//服务器端口号
+        SocketAddress serverIPAndPort =new InetSocketAddress(serverIP,serverPort);//服务器ip+端口
+        clientSocket.connect(serverIPAndPort);//Client与Server建立连接
+
+        //通过字节流,直接写入信息
+        OutputStream os=clientSocket.getOutputStream();
+        PrintStream out =new PrintStream(os,true,"UTF-8");//自动刷新信息
+
+        //通过字节流,直接读取数据
+        InputStream is=clientSocket.getInputStream();//从该套接字获取服务器回复的信息
+        BufferedReader reader=new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+
+        boolean mark1=true;
+        while (mark1){
+            String response= reader.readLine();
+            if (response.equals("连接成功")){
+                mark1=false;
+            }
+        }
+
+        out.println(message);//发送请求
+
+        ArrayList<String> arrayList=new ArrayList<>();
+        //标记为true时，往ArrayList数组中加入服务器数据
+        if (mark){
+            //接收返回信息
+            String line;
+            //接收到over时停止接收信息
+            while (!(line=reader.readLine()).equals("over")){
+                arrayList.add(line);
+            }
+        }
+       else {
+           arrayList.add("null");
+        }
+
+        clientSocket.close();//关闭socket
+
+        //如无服务器返回的数据则返回null
+        if (arrayList.get(0).equals("null")){
+            return null;
+        }
+        else return arrayList;
+    }
+
+}
