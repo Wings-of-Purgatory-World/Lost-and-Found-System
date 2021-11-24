@@ -62,6 +62,24 @@ public class ServerTask implements Runnable {
 
                     break;
                 }
+                //发布Lost信息
+                case 2: {
+                    long timeMillis1 = System.currentTimeMillis();//信息发布时间
+                    if (writeFile(strings[1] + timeMillis1, "Lost物品信息.txt")) {
+                        response = "true";
+                    } else response = "false";
+
+                    break;
+                }
+                //发布Found信息
+                case 3: {
+                    long timeMillis2 = System.currentTimeMillis();//信息发布时间
+                    if (writeFile(strings[1] + timeMillis2, "Found物品信息.txt")) {
+                        response = "true";
+                    } else response = "false";
+
+                    break;
+                }
                 //服务失败
                 default: {
                     System.out.println("服务失败");

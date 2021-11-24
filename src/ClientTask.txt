@@ -23,4 +23,21 @@ public class ClientTask {
         return  Transfer.transfer("1~"+signInLine,true);
     }
 
+    //寻找失物发布方法
+         /*
+        输入String："物品类型//电子产品##物品名称//手机##主要颜色//红色##描述信息//这个东西很棒##地点//教二##联系方式//984427926##发布时间//"
+        输出ArrayList<String>：ArrayList[0]为"true"或"false"
+        */
+    public static ArrayList<String> lostPublish(String information) throws IOException {
+        return Transfer.transfer("2~"+information,true);
+    }
+
+    //寻找失主发布方法
+        /*
+        输入String："物品类型//包##物品名称//书包##主要颜色//蓝色##描述信息//还不错##地点//教一##联系方式//15819293595##发布时间//"
+        输出ArrayList<String>：ArrayList[0]为"true"或"false"
+        */
+    public static ArrayList<String> foundPublish(String information) throws IOException {
+        return Transfer.transfer("3~"+information,true);
+    }
 }
