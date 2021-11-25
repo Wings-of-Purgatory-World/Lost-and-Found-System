@@ -44,7 +44,7 @@ public class ServerTask implements Runnable {
                 case 0: {
                     String[] registerText = strings[1].split("##");//分割注册信息
                     //判断该账号是否已被注册
-                    if (registerScreen("C:\\Users\\ying1\\Desktop\\Server\\用户信息.txt", registerText[1])) {
+                    if (registerScreen(registerText[1])) {
                         writeFile(strings[1], "用户信息.txt");
                         response = "true";//注册成功
                     } else response = "false";//注册失败
@@ -55,7 +55,7 @@ public class ServerTask implements Runnable {
                 case 1:{
                     String[] signInText=strings[1].split("##");//分割登录信息
                     //判断账号密码是否存在且正确
-                    if (signInScreen("C:\\Users\\ying1\\Desktop\\Server\\用户信息.txt",signInText[0],signInText[1])){
+                    if (signInScreen(signInText[0],signInText[1])){
                         response="true";
                     }
                     else response="false";
@@ -80,6 +80,22 @@ public class ServerTask implements Runnable {
 
                     break;
                 }
+                //回传Lost信息、Found信息、检索信息
+                case 4:
+                case 5:
+                case 6: {
+                    String[] requirements = strings[1].split("##");//分割检索字符串
+                    String s = requirements[0].split("//")[1];//获取文本名
+                    String filePath = "C:\\Users\\ying1\\Desktop\\Server\\" + s + "物品信息.txt";//获取文本路径
+
+                    //生成检索要求数组
+                    String[] screens = new String[3];
+                    System.arraycopy(requirements, 1, screens, 0, requirements.length - 1);
+                    //获取检索所得信息
+                    response = readFile(filePath, screens);
+
+                    break;
+                }
                 //服务失败
                 default: {
                     System.out.println("服务失败");
@@ -98,8 +114,8 @@ public class ServerTask implements Runnable {
     }
 
     //登录信息筛选
-    private static boolean signInScreen(String name, String account, String password) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(name));//创建缓冲读取流
+    private static boolean signInScreen(String account, String password) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\ying1\\Desktop\\Server\\用户信息.txt"));//创建缓冲读取流
         String line;
         while ((line=reader.readLine())!=null){
             String[] splits = line.split("##");
@@ -112,8 +128,8 @@ public class ServerTask implements Runnable {
     }
 
     //注册信息筛选
-    private static boolean registerScreen(String name, String account) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(name));//创建缓冲读取流
+    private static boolean registerScreen(String account) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader("C:\\Users\\ying1\\Desktop\\Server\\用户信息.txt"));//创建缓冲读取流
         String line;
         while ((line=reader.readLine())!=null){
             String[] splits = line.split("##");
@@ -136,5 +152,67 @@ public class ServerTask implements Runnable {
         fos.flush();//刷新
         fos.close();//关闭写入流
         return true;
+    }
+
+    //读File获取信息（带筛选）
+    private static String readFile(String name,String[] screens) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(name));//创建缓冲读取流
+        StringBuilder stringBuilder = new StringBuilder();//字符串拼接器
+        String line;
+        String ls = System.getProperty("line.separator");//获取该文本的换行符
+        int count=0;
+        while ((line = reader.readLine()) != null) {
+            String[] temp=line.split("##");
+
+            //满20条信息时,退出循环
+            if (count==20){
+                break;
+            }
+
+            long searchTime=Long.parseLong(temp[6].split("//")[1]);//信息发布时间
+            long screenTime=Long.parseLong(screens[1].split("//")[1]);//要求检索的时间
+            String screen1=screens[0].split("//")[1];//要求检索的物品类型
+            String screen2=screens[2].split("//")[1];//要求检索的主要颜色
+            //添加信息
+            if (screenTime<searchTime) {
+                if (screen1.equals("null") && screen2.equals("null")) {
+                    //拼接每一行的字符串和换行符
+                    stringBuilder.append(line);
+                    stringBuilder.append(ls);
+                    count++;
+                }
+                else if (screen1.equals("null") ) {
+                    if (screens[2].equals(temp[2])){
+                        stringBuilder.append(line);
+                        stringBuilder.append(ls);
+                        count++;
+                    }
+                }
+                else if ( screen2.equals("null")){
+                    if (screens[0].equals(temp[0])){
+                        stringBuilder.append(line);
+                        stringBuilder.append(ls);
+                        count++;
+                    }
+                }
+                else {
+                    if (screens[2].equals(temp[2])&&screens[0].equals(temp[0])){
+                        stringBuilder.append(line);
+                        stringBuilder.append(ls);
+                        count++;
+                    }
+                }
+            }
+        }
+        //若无符合的信息则返回null字符串
+        if (stringBuilder.length()==0){
+            return "null";
+        }
+
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);//删除最后一行的换行符'\n'
+        reader.close();
+
+        return stringBuilder.toString();//返回所要传输的字符串
     }
 }
